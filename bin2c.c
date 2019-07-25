@@ -23,7 +23,7 @@ main(int argc, char *argv[])
 {
     char *buf;
     char *ident;
-    unsigned int i, file_size, need_comma;
+    unsigned int i, file_size, new_file_size, padded_size, need_comma;
 
     FILE *f_input, *f_output;
 
@@ -86,22 +86,36 @@ main(int argc, char *argv[])
     }
 
     ident = argv[3];
+    if(argc == 5) {
+        padded_size = atoi(argv[4]);
+        if((padded_size - file_size) < 1)
+            new_file_size = file_size;
+        else
+            new_file_size = file_size + (padded_size - file_size);
+    } else
+        new_file_size = file_size;
+
 
     need_comma = 0;
 
-    fprintf(f_output, "const char %s[%i] = {", ident, file_size);
-    for (i = 0; i < file_size; ++i) {
+    fprintf(f_output, "const char %s[%i] = {", ident, new_file_size);
+
+    for (i = 0; i < new_file_size; ++i) {
         if (need_comma)
             fprintf(f_output, ", ");
         else
             need_comma = 1;
         if ((i % 11) == 0)
             fprintf(f_output, "\n\t");
-        fprintf(f_output, "0x%.2x", buf[i] & 0xff);
+        if(i < file_size)
+            fprintf(f_output, "0x%.2x", buf[i] & 0xff);
+        else
+            fprintf(f_output, "0x00");
     }
+
     fprintf(f_output, "\n};\n\n");
 
-    fprintf(f_output, "const int %s_length = %i;\n", ident, file_size);
+    fprintf(f_output, "const int %s_length = %i;\n", ident, new_file_size);
 
 #ifdef USE_BZ2
     fprintf(f_output, "const int %s_length_uncompressed = %i;\n", ident,
